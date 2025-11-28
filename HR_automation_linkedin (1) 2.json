@@ -1,0 +1,1570 @@
+{
+  "name": "HR_automation_linkedin",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "application-submission",
+        "options": {
+          "responseData": "success"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -736,
+        -80
+      ],
+      "id": "6f8e57ee-d01c-4945-8afb-a085ad070c2c",
+      "name": "Application_Intake",
+      "webhookId": "7aff0c1d-c03d-4857-80ab-bacf35a59152"
+    },
+    {
+      "parameters": {
+        "inputDataFieldName": "cv",
+        "name": "={{ $json.body.firstName }}_{{ $json.body.lastName }}_CV_{{ $now.format('yyyy-MM-dd') }}.pdf",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1mMHKy17h9MhPP76XJw6KHWs2F1eA8vrD",
+          "mode": "list",
+          "cachedResultName": "Candidate CVs"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -464,
+        -336
+      ],
+      "id": "b9374090-5500-4a66-bada-fb6e01def90e",
+      "name": "Upload_CV_to_Drive"
+    },
+    {
+      "parameters": {
+        "inputDataFieldName": "video",
+        "name": "={{ $('Application_Intake').item.json.body.firstName }}_{{ $('Application_Intake').item.json.body.lastName }}_Video_{{ $now.format('yyyy-MM-dd') }}.mp4",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1mMHKy17h9MhPP76XJw6KHWs2F1eA8vrD",
+          "mode": "list",
+          "cachedResultName": "Candidate CVs"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -464,
+        176
+      ],
+      "id": "52eb9287-8c33-408f-8aef-17241a8de307",
+      "name": "Upload_Video_to_Drive"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "cv",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -464,
+        -176
+      ],
+      "id": "094ba7a2-c499-4146-9aae-1e34be75a071",
+      "name": "Extract_CV_Text1"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "binaryPropertyName": "video",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -464,
+        16
+      ],
+      "id": "ed05baf4-1be3-4c2f-826f-9b0e540482dd",
+      "name": "Transcribe_Video1",
+      "credentials": {
+        "openAiApi": {
+          "id": "gr65146gtpgNzfyz",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -16,
+        -80
+      ],
+      "id": "aacfd2fa-1b2d-4f93-ada1-312d3a65a1a0",
+      "name": "Merge_CV_Video_Data1"
+    },
+    {
+      "parameters": {
+        "text": "=Here is the candidate CV text:\n\n{{ $json.data[1].text }}\nPlease extract the following information:",
+        "attributes": {
+          "attributes": [
+            {
+              "name": "candidate_experience",
+              "description": "The Candidate's work experience summary from CV: company names, job titles, and durations.",
+              "required": true
+            },
+            {
+              "name": "candidate_skills",
+              "description": "Comma-separated list of key skills from CV (technical and soft skills). Minimum 3 skills",
+              "required": true
+            }
+          ]
+        },
+        "options": {
+          "systemPromptTemplate": "You are an expert HR data extraction algorithm. Extract relevant candidate information from CV text. Be thorough and accurate. For missing fields, return 'Not provided' instead of empty string."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        384,
+        -80
+      ],
+      "id": "c4e1a63d-c763-477b-9333-5b483d1653ea",
+      "name": "Extract_CV_Info1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        432,
+        112
+      ],
+      "id": "4e838d7f-518e-4799-ac0a-0c40bbd9fd3f",
+      "name": "OpenAI_Chat_Model_Mini1",
+      "credentials": {
+        "openAiApi": {
+          "id": "gr65146gtpgNzfyz",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "43c975c8-10c6-4861-be33-cb48560c2677",
+              "name": "first_name",
+              "value": "={{ $('Application_Intake').item.json.body.firstName }}",
+              "type": "string"
+            },
+            {
+              "id": "39ab74fa-f0b6-4994-8c4d-d632926e9133",
+              "name": "last_name",
+              "value": "={{ $('Application_Intake').item.json.body.lastName }}",
+              "type": "string"
+            },
+            {
+              "id": "d31a4cb1-21d5-45c1-b32e-f125e20d345a",
+              "name": "email",
+              "value": "={{ $('Application_Intake').item.json.body.email }}",
+              "type": "string"
+            },
+            {
+              "id": "ef721599-d3dd-4ff2-a47d-8acfd5eb39b8",
+              "name": "phone_number",
+              "value": "={{ $('Application_Intake').item.json.body.phone }}",
+              "type": "string"
+            },
+            {
+              "id": "6e748372-b81d-42fd-b5a6-36f1cd01079c",
+              "name": "linkedin_url",
+              "value": "={{ $('Application_Intake').item.json.body.linkedin }}",
+              "type": "string"
+            },
+            {
+              "id": "706e5c39-87b9-43db-a9a9-cec49e1f7e50",
+              "name": "why_apply",
+              "value": "={{ $('Application_Intake').item.json.body.whyApply }}",
+              "type": "string"
+            },
+            {
+              "id": "0fdb0bcc-e3d4-4d1a-9551-4eb7b48e01d4",
+              "name": "strengths_weaknesses",
+              "value": "={{ $('Application_Intake').item.json.body.strengths }}",
+              "type": "string"
+            },
+            {
+              "id": "5e4fe426-686f-4fbc-9f3f-31d9e3e95ebb",
+              "name": "team_work",
+              "value": "={{ $('Application_Intake').item.json.body.teamWork }}",
+              "type": "string"
+            },
+            {
+              "id": "e1571be3-0adc-4d6e-9651-7b9797637bdc",
+              "name": "adapt_quickly",
+              "value": "={{ $('Application_Intake').item.json.body.adaptQuickly }}",
+              "type": "string"
+            },
+            {
+              "id": "4e60cb9f-b9e5-48ea-8690-dd4e0636966c",
+              "name": "office_work",
+              "value": "={{ $('Application_Intake').item.json.body.officeWork }}",
+              "type": "string"
+            },
+            {
+              "id": "1d416038-bd1d-4cf8-a191-0287fc6e8904",
+              "name": "cv_url",
+              "value": "={{ $('Aggregate').item.json.data[0].webViewLink }}",
+              "type": "string"
+            },
+            {
+              "id": "5f4df1e4-36ab-4c2c-baa1-62c8785ff292",
+              "name": "video_url",
+              "value": "={{ $('Aggregate').item.json.data[3].webViewLink }}",
+              "type": "string"
+            },
+            {
+              "id": "video-transcript",
+              "name": "video_transcript",
+              "value": "={{ $('Aggregate').item.json.data[2].text }}",
+              "type": "string"
+            },
+            {
+              "id": "3f130f61-aeb3-482b-a0f2-07c4e20154ad",
+              "name": "candidate_experience",
+              "value": "={{ $json.output.candidate_experience }}",
+              "type": "string"
+            },
+            {
+              "id": "4ca4d36e-a0b5-437c-bdf7-9f78e42aa192",
+              "name": "candidate_skills",
+              "value": "={{ $json.output.candidate_skills }}",
+              "type": "string"
+            },
+            {
+              "id": "db0631bd-0a30-4489-bf95-bc1d527969ae",
+              "name": "applied_role",
+              "value": "={{ $('Application_Intake').item.json.body.appliedRole }}",
+              "type": "string"
+            },
+            {
+              "id": "job-location",
+              "name": "job_location",
+              "value": "={{ $('Application_Intake').item.json.body.jobLocation }}",
+              "type": "string"
+            },
+            {
+              "id": "job-description",
+              "name": "job_description",
+              "value": "={{ $('Application_Intake').item.json.body.jobDescription }}",
+              "type": "string"
+            },
+            {
+              "id": "job-responsibilities",
+              "name": "job_responsibilities",
+              "value": "={{ $('Application_Intake').item.json.body.jobResponsibilities }}",
+              "type": "string"
+            },
+            {
+              "id": "job-requirements",
+              "name": "job_requirements",
+              "value": "={{ $('Application_Intake').item.json.body.jobRequirements }}",
+              "type": "string"
+            },
+            {
+              "id": "8b5b874d-85c2-4850-b5f0-e87ba4d6056a",
+              "name": "candidate_id",
+              "value": "={{ $('Application_Intake').item.json.body.email }}_{{ $('Application_Intake').item.json.body.appliedRole }}",
+              "type": "string"
+            },
+            {
+              "id": "0a6664ad-78e7-4ee8-a0d4-5fe78c851ee8",
+              "name": "application_date",
+              "value": "={{ new Date().toISOString().split('T')[0] }}\n",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        704,
+        -80
+      ],
+      "id": "6aa7e3cd-e3a1-46eb-9b08-4e38738f435f",
+      "name": "Prepare_Candidate_Data1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert HR assessment evaluator. Analyze this candidate's application comprehensively.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nCANDIDATE PROFILE\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nName: {{ $json.first_name }} {{ $json.last_name }}\nEmail: {{ $json.email }}\nPhone: {{ $json.phone_number }}\nLinkedIn: {{ $json.linkedin_url }}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nPOSITION APPLIED FOR\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nRole: {{ $json.applied_role }}\nLocation: {{ $json.job_location }}\nDescription: {{ $json.job_description }}\n\nKey Responsibilities:\n{{ JSON.parse($json.job_responsibilities).map((r, i) => `${i + 1}. ${r}`).join('\\n') }}\n\nRequired Skills & Qualifications:\n{{ JSON.parse($json.job_requirements).map((r, i) => `${i + 1}. ${r}`).join('\\n') }}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nCANDIDATE'S CV ANALYSIS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nExperience Summary:\n{{ $json.candidate_experience }}\n\nSkills Identified:\n{{ $json.candidate_skills }}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nASSESSMENT RESPONSES\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nQ1: Why did you apply to this role?\nA: {{ $json.why_apply }}\n\nQ2: What are your strengths and weaknesses for this role?\nA: {{ $json.strengths_weaknesses }}\n\nQ3: Tell me about a time you worked in a team\nA: {{ $json.team_work }}\n\nQ4: Tell me about a time you had to adapt quickly\nA: {{ $json.adapt_quickly }}\n\nQ5: Are you able to work in our office?\nA: {{ $json.office_work }}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nVIDEO INTRODUCTION TRANSCRIPT\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n{{ $json.video_transcript }}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nEVALUATION CRITERIA\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nScore this candidate on a scale of 0-100 based on:\n\n🎯 RELEVANCE & QUALIFICATION (30 points)\n   - CV experience match with job requirements\n   - Required skills presence\n   - Experience level appropriateness\n   - Domain knowledge demonstration\n\n💬 COMMUNICATION & CLARITY (25 points)\n   - Response clarity and structure\n   - Grammar and language proficiency\n   - Complex thought expression\n   - Video presentation quality\n   - STAR method usage\n\n🔥 MOTIVATION & CULTURAL FIT (25 points)\n   - Genuine role interest\n   - Compelling motivation\n   - Job understanding\n   - Self-awareness\n   - Location compatibility\n\n⭐ PROFESSIONALISM & POTENTIAL (20 points)\n   - Overall impression\n   - Application attention to detail\n   - Growth mindset\n   - Collaboration examples\n   - Red flags assessment\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nSCORING GUIDELINES\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nPROCEED_TO_INTERVIEW (75-100): Strong match across all criteria\nCONSIDER_WITH_CAUTION (60-74): Meets some requirements, has potential but concerns exist\nREJECT (<60): Does not meet minimum requirements or major red flags present\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nProvide your evaluation in this EXACT JSON structure with integer scores only:\n\n{\n  \"total_score\": 85,\n  \"relevance_score\": 25,\n  \"communication_score\": 22,\n  \"motivation_score\": 20,\n  \"professionalism_score\": 18,\n  \"justification\": \"2-3 sentence summary\",\n  \"strengths\": [\"strength 1\", \"strength 2\", \"strength 3\"],\n  \"concerns\": [\"concern 1\", \"concern 2\"],\n  \"recommendation\": \"PROCEED_TO_INTERVIEW\",\n  \"key_insights\": \"One paragraph summary\"\n}\n\nRespond with raw JSON only (no markdown, no backticks).",
+        "hasOutputParser": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        912,
+        -80
+      ],
+      "id": "69868b53-f748-4c89-8107-439a65ff8bf8",
+      "name": "AI_Candidate_Scoring1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o"
+        },
+        "options": {
+          "maxTokens": 1500,
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        912,
+        112
+      ],
+      "id": "7894ff33-6442-4796-8200-450572003aa8",
+      "name": "OpenAI_Chat_Model_GPT",
+      "credentials": {
+        "openAiApi": {
+          "id": "gr65146gtpgNzfyz",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"type\": \"object\",\n  \"properties\": {\n    \"total_score\": {\"type\": \"integer\", \"minimum\": 0, \"maximum\": 100},\n    \"relevance_score\": {\"type\": \"integer\", \"minimum\": 0, \"maximum\": 30},\n    \"communication_score\": {\"type\": \"integer\", \"minimum\": 0, \"maximum\": 25},\n    \"motivation_score\": {\"type\": \"integer\", \"minimum\": 0, \"maximum\": 25},\n    \"professionalism_score\": {\"type\": \"integer\", \"minimum\": 0, \"maximum\": 20},\n    \"justification\": {\"type\": \"string\"},\n    \"strengths\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}},\n    \"concerns\": {\"type\": \"array\", \"items\": {\"type\": \"string\"}},\n    \"recommendation\": {\"type\": \"string\", \"enum\": [\"PROCEED_TO_INTERVIEW\", \"CONSIDER_WITH_CAUTION\", \"REJECT\"]},\n    \"key_insights\": {\"type\": \"string\"}\n  },\n  \"required\": [\"total_score\", \"relevance_score\", \"communication_score\", \"motivation_score\", \"professionalism_score\", \"justification\", \"strengths\", \"concerns\", \"recommendation\", \"key_insights\"]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1120,
+        112
+      ],
+      "id": "5bc6a572-78f2-478a-be9b-5f1514fde245",
+      "name": "JSON_Output_Parser1"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "value": "726adf45-b13c-493a-b98f-33720a27e61e",
+          "mode": "list",
+          "cachedResultName": "HR Automation - Applicants"
+        },
+        "limit": 1,
+        "filterType": "manual",
+        "filters": {
+          "conditions": [
+            {
+              "key": "Candidate_ıd|rich_text",
+              "condition": "equals",
+              "richTextValue": "={{ $('Prepare_Candidate_Data1').item.json.candidate_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        1328,
+        -80
+      ],
+      "id": "76ac15ac-b500-47fe-9a5d-195e28f70102",
+      "name": "Check_Existing_Application1",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "existing-check",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.1,
+      "position": [
+        1568,
+        -80
+      ],
+      "id": "55badb1b-8c76-4c95-9573-f55c03b1ad41",
+      "name": "Is_Duplicate_Application1",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": {
+          "__rl": true,
+          "value": "={{ $('Check_Existing_Application1').item.json.id }}",
+          "mode": "id"
+        },
+        "simple": false,
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Name|title",
+              "title": "={{ $('Prepare_Candidate_Data1').item.json.first_name }} {{ $('Prepare_Candidate_Data1').item.json.last_name }}"
+            },
+            {
+              "key": "Email|email",
+              "emailValue": "={{ $('Prepare_Candidate_Data1').item.json.email }}"
+            },
+            {
+              "key": "Phone Number|phone_number",
+              "phoneValue": "={{ $('Prepare_Candidate_Data1').item.json.phone_number }}"
+            },
+            {
+              "key": "LinkedIn|url",
+              "urlValue": "={{ $('Prepare_Candidate_Data1').item.json.linkedin_url }}"
+            },
+            {
+              "key": "Why applied|rich_text",
+              "textContent": "={{ $('Prepare_Candidate_Data1').item.json.why_apply }}"
+            },
+            {
+              "key": "Strengths Weaknesses|rich_text",
+              "textContent": "={{ $('Prepare_Candidate_Data1').item.json.strengths_weaknesses }}"
+            },
+            {
+              "key": "Team Work|rich_text",
+              "textContent": "={{ $('Prepare_Candidate_Data1').item.json.team_work }}"
+            },
+            {
+              "key": "Adapt Quickly|rich_text",
+              "textContent": "={{ $('Prepare_Candidate_Data1').item.json.adapt_quickly }}"
+            },
+            {
+              "key": "Office Work|rich_text",
+              "textContent": "={{ $('Prepare_Candidate_Data1').item.json.office_work }}"
+            },
+            {
+              "key": "CVLink|url",
+              "urlValue": "={{ $('Prepare_Candidate_Data1').item.json.cv_url }}"
+            },
+            {
+              "key": "VideoLink|url",
+              "urlValue": "={{ $('Prepare_Candidate_Data1').item.json.video_url }}"
+            },
+            {
+              "key": "Video_Trancribe|rich_text",
+              "textContent": "={{ $('Prepare_Candidate_Data1').item.json.video_transcript }}"
+            },
+            {
+              "key": "Experience|rich_text",
+              "textContent": "={{ $('Prepare_Candidate_Data1').item.json.candidate_experience }}"
+            },
+            {
+              "key": "Skills|rich_text",
+              "textContent": "={{ $('Prepare_Candidate_Data1').item.json.candidate_skills }}"
+            },
+            {
+              "key": "Status|status",
+              "statusValue": "New Application"
+            },
+            {
+              "key": "Score|number",
+              "numberValue": "={{ $('AI_Candidate_Scoring1').item.json.output.total_score }}"
+            },
+            {
+              "key": "Ai_Recommendation|rich_text",
+              "textContent": "={{ $('AI_Candidate_Scoring1').item.json.output.recommendation }}"
+            },
+            {
+              "key": "Application Date|date",
+              "includeTime": false,
+              "date": "={{ new Date().toISOString().split('T')[0] }}\n",
+              "timezone": "Europe/Zurich"
+            },
+            {
+              "key": "Ai_Feedback_Response|rich_text",
+              "textContent": "={{ $('AI_Candidate_Scoring1').item.json.output.key_insights }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        1872,
+        -176
+      ],
+      "id": "4d80890a-b9fe-4894-bd20-436c0bf70525",
+      "name": "Update_Existing_Application1"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "databaseId": {
+          "__rl": true,
+          "value": "726adf45-b13c-493a-b98f-33720a27e61e",
+          "mode": "list",
+          "cachedResultName": "HR Automation - Applicants"
+        },
+        "title": "={{ $('Prepare_Candidate_Data1').item.json.first_name }} {{ $('Prepare_Candidate_Data1').item.json.last_name }}",
+        "simple": false,
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Email|email",
+              "emailValue": "={{ $('Prepare_Candidate_Data1').item.json.email }}"
+            },
+            {
+              "key": "Phone Number|phone_number",
+              "phoneValue": "={{ $('Prepare_Candidate_Data1').item.json.phone_number }}"
+            },
+            {
+              "key": "LinkedIn|url",
+              "ignoreIfEmpty": true,
+              "urlValue": "={{ $('Prepare_Candidate_Data1').item.json.linkedin_url }}"
+            },
+            {
+              "key": "Why applied|rich_text",
+              "textContent": "={{ $('Prepare_Candidate_Data1').item.json.why_apply }}"
+            },
+            {
+              "key": "Strengths Weaknesses|rich_text",
+              "textContent": "={{ $('Prepare_Candidate_Data1').item.json.strengths_weaknesses }}"
+            },
+            {
+              "key": "Team Work|rich_text",
+              "textContent": "={{ $('Prepare_Candidate_Data1').item.json.team_work }}"
+            },
+            {
+              "key": "Adapt Quickly|rich_text",
+              "textContent": "={{ $('Prepare_Candidate_Data1').item.json.adapt_quickly }}"
+            },
+            {
+              "key": "Office Work|rich_text",
+              "textContent": "={{ $('Prepare_Candidate_Data1').item.json.office_work }}"
+            },
+            {
+              "key": "CVLink|url",
+              "urlValue": "={{ $('Prepare_Candidate_Data1').item.json.cv_url }}"
+            },
+            {
+              "key": "VideoLink|url",
+              "urlValue": "={{ $('Prepare_Candidate_Data1').item.json.video_url }}"
+            },
+            {
+              "key": "Video_Trancribe|rich_text",
+              "textContent": "={{ $('Prepare_Candidate_Data1').item.json.video_transcript }}"
+            },
+            {
+              "key": "Experience|rich_text",
+              "textContent": "={{ $('Prepare_Candidate_Data1').item.json.candidate_experience }}"
+            },
+            {
+              "key": "Skills|rich_text",
+              "textContent": "={{ $('Prepare_Candidate_Data1').item.json.candidate_skills }}"
+            },
+            {
+              "key": "Applied Role|rich_text",
+              "textContent": "={{ $('Prepare_Candidate_Data1').item.json.applied_role }}"
+            },
+            {
+              "key": "Candidate_ıd|rich_text",
+              "textContent": "={{ $('Prepare_Candidate_Data1').item.json.candidate_id }}"
+            },
+            {
+              "key": "Application Date|date",
+              "includeTime": false,
+              "date": "={{ new Date().toISOString().split('T')[0] }}\n",
+              "timezone": "Europe/Zurich"
+            },
+            {
+              "key": "Score|number",
+              "numberValue": "={{ $('AI_Candidate_Scoring1').item.json.output.total_score }}"
+            },
+            {
+              "key": "Ai_Recommendation|rich_text",
+              "textContent": "={{ $('AI_Candidate_Scoring1').item.json.output.recommendation }}"
+            },
+            {
+              "key": "Ai_Feedback_Response|rich_text",
+              "textContent": "={{ $('AI_Candidate_Scoring1').item.json.output.key_insights }}"
+            },
+            {
+              "key": "Status|status",
+              "statusValue": "New Application"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        1872,
+        16
+      ],
+      "id": "39f6dddd-3bc7-44f1-8ec5-f0627e6f58a1",
+      "name": "Create_New_Application1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -208,
+        96
+      ],
+      "id": "79fdf408-893a-4b7b-9a8c-9c1306eb76f3",
+      "name": "Merge"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -224,
+        -240
+      ],
+      "id": "cda0e1d3-faeb-47b1-a3b5-ff4475c7e78b",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        192,
+        -80
+      ],
+      "id": "6296620f-6b77-4cee-b659-e5bf2a9542f2",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "toRecipients": "=furkan_cinko@outlook.com",
+        "subject": "=Your Aplication for {{ $('Prepare_Candidate_Data1').item.json.applied_role }}",
+        "bodyContent": "=<!doctype html>\n<html lang=\"en\" style=\"margin:0;padding:0;\">\n  <head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\"/>\n    <title>Application Received</title>\n\n    <!-- Force light mode in Apple Mail / iOS / some clients -->\n    <meta name=\"color-scheme\" content=\"light\">\n    <meta name=\"supported-color-schemes\" content=\"light\">\n\n    <style>\n      /* Prevent Outlook.com/Office 365 dark mode inversion */\n      [data-ogsc] body, [data-ogsc] table, [data-ogsc] td {\n        background:#ffffff !important; color:#111827 !important;\n      }\n      /* Some clients honor this root hint */\n      :root { color-scheme: light; supported-color-schemes: light; }\n      /* Links default color (helps when clients recolor links in dark mode) */\n      a { color:#2563eb; }\n    </style>\n    <!--[if mso]>\n      <style type=\"text/css\">\n        body, table, td, p, a, li { font-family: Arial, Helvetica, sans-serif !important; }\n      </style>\n    <![endif]-->\n  </head>\n  <body bgcolor=\"#ffffff\" style=\"margin:0;padding:0;background:#ffffff !important;font-family:Arial,Helvetica,sans-serif;color:#111827;\">\n    <table role=\"presentation\" width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" bgcolor=\"#ffffff\" style=\"background:#ffffff !important;\">\n      <tr>\n        <td align=\"center\" bgcolor=\"#ffffff\" style=\"padding:24px;background:#ffffff !important;\">\n          <!-- Container -->\n          <table role=\"presentation\" width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\"\n                 bgcolor=\"#ffffff\"\n                 style=\"max-width:600px;background:#ffffff !important;border-radius:12px;border:1px solid #e5e7eb;\">\n            <!-- Header / Logo -->\n            <tr>\n              <td align=\"center\" bgcolor=\"#ffffff\" style=\"padding:28px 24px 8px 24px;background:#ffffff !important;\">\n                <a href=\"{{$json.company_website || 'https://www.apollo-gs.com'}}\" target=\"_blank\" style=\"text-decoration:none;display:inline-block;\">\n                  <img src=\"https://www.apollo-gs.com/cdn/shop/files/apollonewschrift.png?height=36&v=1755554546\"\n                       width=\"160\" height=\"48\"\n                       alt=\"{{$json.company_name || 'Apollo Green Solution'}} logo\"\n                       style=\"display:block;border:0;outline:none;text-decoration:none;height:auto;max-width:160px;\">\n                </a>\n              </td>\n            </tr>\n\n            <!-- Title -->\n            <tr>\n              <td align=\"left\" bgcolor=\"#ffffff\" style=\"padding:8px 24px 0 24px;background:#ffffff !important;\">\n                <h1 style=\"margin:0;font-size:20px;line-height:28px;font-weight:700;color:#111827;\">\n                  Application Received – {{ $('Prepare_Candidate_Data1').item.json.applied_role }}\n                </h1>\n              </td>\n            </tr>\n\n            <!-- Greeting + Body -->\n            <tr>\n              <td align=\"left\" bgcolor=\"#ffffff\" style=\"padding:12px 24px 0 24px;background:#ffffff !important;\">\n                <p style=\"margin:0 0 12px 0;font-size:15px;line-height:22px;color:#111827;\">\n                  Dear {{ $('Prepare_Candidate_Data1').item.json.first_name }},\n                </p>\n                <p style=\"margin:0 0 12px 0;font-size:15px;line-height:22px;color:#111827;\">\n                  Thank you for applying for the <strong>{{ $('Prepare_Candidate_Data1').item.json.applied_role }}</strong> position at <strong>Apollo Green Solution</strong>. We’ve successfully received your application materials.\n                </p>\n                <p style=\"margin:0 0 12px 0;font-size:15px;line-height:22px;color:#111827;\">\n                  Our recruitment team is reviewing your submission. If your profile aligns with our current requirements, we’ll contact you about the next steps.\n                </p>\n              </td>\n            </tr>\n\n            <!-- Details block -->\n            <tr>\n              <td align=\"left\" bgcolor=\"#ffffff\" style=\"padding:8px 24px;background:#ffffff !important;\">\n                <table role=\"presentation\" width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\"\n                       bgcolor=\"#f9fafb\"\n                       style=\"background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;\">\n                  <tr>\n                    <td style=\"padding:14px 16px;\">\n                      <p style=\"margin:0 0 6px 0;font-size:13px;line-height:20px;color:#6b7280;\">\n                        Candidate:\n                      </p>\n                      <p style=\"margin:0;font-size:14px;line-height:20px;color:#111827;\">\n                        {{ $('Prepare_Candidate_Data1').item.json.first_name }}\n                        {{ $('Prepare_Candidate_Data1').item.json.last_name }} ·\n                        {{ $('Prepare_Candidate_Data1').item.json.email }}\n                      </p>\n\n                      <p style=\"margin:12px 0 6px 0;font-size:13px;line-height:20px;color:#6b7280;\">\n                        Position:\n                      </p>\n                      <p style=\"margin:0;font-size:14px;line-height:20px;color:#111827;\">\n                        {{ $('Prepare_Candidate_Data1').item.json.applied_role }} – {{ $('Application_Intake').item.json.body.jobLocation }}\n                      </p>\n                    </td>\n                  </tr>\n                </table>\n              </td>\n            </tr>\n\n            <!-- Footer copy -->\n            <tr>\n              <td align=\"left\" bgcolor=\"#ffffff\" style=\"padding:16px 24px 6px 24px;background:#ffffff !important;\">\n                <p style=\"margin:0 0 10px 0;font-size:15px;line-height:22px;color:#111827;\">\n                  If you have any questions, you can reply to this email or contact us at\n                  <a href=\"mailto:{{$json.company_email || 'hr@example.com'}}\" style=\"color:#2563eb;text-decoration:underline;\">\n                    {{$json.company_email || 'hr@example.com'}}\n                  </a>.\n                </p>\n                <p style=\"margin:0 0 18px 0;font-size:15px;line-height:22px;color:#111827;\">\n                  Kind regards,<br>\n                  <strong>HR Team</strong><br>\n                  {{$json.sender_title || \"\"}} {{$json.company_name || \"Apollo Green Solution\"}}\n                </p>\n              </td>\n            </tr>\n\n            <!-- Divider -->\n            <tr>\n              <td bgcolor=\"#ffffff\" style=\"padding:0 24px;background:#ffffff !important;\">\n                <hr style=\"border:none;border-top:1px solid #e5e7eb;margin:0;\">\n              </td>\n            </tr>\n\n            <!-- Company footer -->\n            <tr>\n              <td align=\"left\" bgcolor=\"#ffffff\" style=\"padding:12px 24px 22px 24px;background:#ffffff !important;\">\n                <p style=\"margin:0;font-size:12px;line-height:18px;color:#6b7280;\">\n                  Apollo Green Solution · {{$json.company_website || 'https://www.apollo-gs.com'}}\n                  {{ $json.company_address ? ('· ' + $json.company_address) : '' }}\n                </p>\n              </td>\n            </tr>\n          </table>\n\n          <!-- Small print -->\n          <table role=\"presentation\" width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"max-width:600px;background:#ffffff !important;\" bgcolor=\"#ffffff\">\n            <tr>\n              <td align=\"center\" style=\"padding:12px 8px 0 8px;background:#ffffff !important;\" bgcolor=\"#ffffff\">\n                <p style=\"margin:0;font-size:11px;line-height:16px;color:#9ca3af;\">\n                  This message was sent by Apollo Green Solution in response to your application.\n                </p>\n              </td>\n            </tr>\n          </table>\n\n        </td>\n      </tr>\n    </table>\n  </body>\n</html>\n",
+        "additionalFields": {
+          "bodyContentType": "html"
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        2240,
+        -80
+      ],
+      "id": "5c44b265-b863-4a62-b248-0b689deac1a5",
+      "name": "Send a message",
+      "webhookId": "add3b9b8-8bf7-4ec2-960f-f14b30ff4966"
+    },
+    {
+      "parameters": {
+        "toRecipients": "helincinko@gmail.com",
+        "subject": "=❌ Invalid Date Format - {{ $('Extract_Interview_Details').item.json.candidate_name }}",
+        "bodyContent": "=The interview scheduling failed due to invalid date format.\n\nPlease reply with the correct format:\n\nSTART: YYYY-MM-DD HH:MM\nEND: YYYY-MM-DD HH:MM\n\nExample:\nSTART: 2025-10-20 14:00\nEND: 2025-10-20 15:00\n\nCandidate: {{ $('Extract_Interview_Details').item.json.candidate_name }}",
+        "additionalFields": {
+          "importance": "High"
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        3440,
+        -112
+      ],
+      "id": "c3204647-cb89-470a-8b4a-05b08c0ec97d",
+      "name": "Send_Error_Notification",
+      "webhookId": "c2f499ac-a886-4b63-9e56-ff9eb158aeac"
+    },
+    {
+      "parameters": {
+        "toRecipients": "furkan_cinko@outlook.com",
+        "subject": "=✅ Interview Scheduled: {{ $('Extract_Interview_Details').item.json.candidate_name }}",
+        "bodyContent": "=Interview has been successfully scheduled!\n\n👤 Candidate: {{ $('Extract_Interview_Details').item.json.candidate_name }}\n📧 Email: {{ $('Extract_Interview_Details').item.json.candidate_email }}\n📅 Date: {{ new Date($('Extract_Interview_Details').item.json.interview_start).toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' }) }}\n⏰ Duration: {{ new Date($('Extract_Interview_Details').item.json.interview_start).toLocaleString('en-US', { timeStyle: 'short' }) }} - {{ new Date($('Extract_Interview_Details').item.json.interview_end).toLocaleString('en-US', { timeStyle: 'short' }) }}\n\nCalendar invite has been sent to the candidate.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        3872,
+        -304
+      ],
+      "id": "3650fa05-ca8a-433d-b9fe-249f8967ffa4",
+      "name": "Confirm_To_HR",
+      "webhookId": "ebcfb807-3845-46bf-b0a3-af09ca83dffd"
+    },
+    {
+      "parameters": {
+        "toRecipients": "=furkan_cinko@outlook.com",
+        "subject": "=Interview Invivation for {{ $('Validate_Date_Format').item.json.candidate_name }} - {{ $('Validate_Date_Format').item.json.applied_role }}",
+        "bodyContent": "=<!doctype html>\n<html lang=\"en\" style=\"margin:0;padding:0;\">\n  <head>\n    <meta charset=\"utf-8\"/>\n    <meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\"/>\n    <meta http-equiv=\"x-ua-compatible\" content=\"ie=edge\"/>\n    <title>Interview Invitation</title>\n\n    <!-- Force light mode -->\n    <meta name=\"color-scheme\" content=\"light\">\n    <meta name=\"supported-color-schemes\" content=\"light\">\n\n    <style>\n      [data-ogsc] body, [data-ogsc] table, [data-ogsc] td { background:#ffffff !important; color:#111827 !important; }\n      a { color:#0040dd; text-decoration:none; }\n      .link { text-decoration:underline; }\n      @media only screen and (max-width: 600px) {\n        .wrapper { padding:16px !important; }\n        .content { padding:20px !important; }\n        .h1 { font-size:22px !important; line-height:1.35 !important; }\n        .button { padding:14px 24px !important; font-size:15px !important; }\n      }\n    </style>\n    <!--[if mso]>\n      <style type=\"text/css\">\n        body, table, td, p, a, li { font-family: Arial, Helvetica, sans-serif !important; }\n      </style>\n    <![endif]-->\n  </head>\n\n  <body bgcolor=\"#ffffff\" style=\"margin:0;padding:0;background:#ffffff !important;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;font-family:Arial,Helvetica,sans-serif;color:#111827;\">\n    <div style=\"display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;\">\n      Your interview has been scheduled – join details inside\n    </div>\n\n    <table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" bgcolor=\"#ffffff\" style=\"background:#ffffff !important;\">\n      <tr>\n        <td align=\"center\" style=\"padding:32px 12px;background:#ffffff !important;\" bgcolor=\"#ffffff\">\n          <table role=\"presentation\" class=\"card\" width=\"600\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\"\n                 style=\"max-width:600px;width:100%;background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,36,100,0.08);\">\n            \n            <!-- Brand bar -->\n            <tr>\n              <td style=\"background:linear-gradient(135deg,#0f60ff 0%,#0040dd 100%);height:6px;line-height:6px;font-size:0;\">&nbsp;</td>\n            </tr>\n\n            <!-- Header with Logo -->\n            <tr>\n              <td class=\"wrapper\" style=\"padding:28px 28px 0;background:#ffffff !important;\" bgcolor=\"#ffffff\">\n                <table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\">\n                  <tr>\n                    <td align=\"center\">\n                      <a href=\"{{$json.company_website || 'https://www.apollo-gs.com'}}\" target=\"_blank\" style=\"display:inline-block;\">\n                        <img src=\"{{$json.company_logo_url || 'https://www.apollo-gs.com/cdn/shop/files/apollonewschrift.png?height=36&v=1755554546'}}\"\n                             alt=\"{{$json.company_name || 'Company'}} logo\"\n                             width=\"160\" height=\"48\"\n                             style=\"display:block;border:0;outline:none;text-decoration:none;height:auto;max-width:160px;margin:0 auto 16px;\">\n                      </a>\n                      <h1 class=\"h1\" style=\"margin:0 0 8px;font-size:24px;font-weight:700;color:#0b1a33;line-height:1.3;\">\n                        Interview Invitation\n                      </h1>\n                      <p style=\"margin:0;font-size:15px;color:#5c6b80;\">\n                        {{ $('Validate_Date_Format').item.json.applied_role }}\n                      </p>\n                    </td>\n                  </tr>\n                </table>\n              </td>\n            </tr>\n\n            <!-- Body -->\n            <tr>\n              <td class=\"content\" style=\"padding:22px 28px 28px;background:#ffffff !important;\" bgcolor=\"#ffffff\">\n                <p style=\"margin:0 0 16px;font-size:15px;line-height:1.6;color:#1b2a44;\">\n                  Dear <strong>{{ $('Validate_Date_Format').item.json.candidate_name }}</strong>,\n                </p>\n                <p style=\"margin:0 0 18px;font-size:15px;line-height:1.6;color:#1b2a44;\">\n                  Congratulations! We’re pleased to invite you to an interview for the <strong>{{ $('Validate_Date_Format').item.json.applied_role }}</strong> position.\n                </p>\n\n                <!-- Details card -->\n                <table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\"\n                       style=\"margin:0 0 22px;background:#f7f9fc;border:1px solid #e5e7eb;border-radius:10px;\">\n                  <tr>\n                    <td style=\"padding:18px;\">\n                      <h2 style=\"margin:0 0 12px;font-size:16px;font-weight:700;color:#0b1a33;\">📋 Interview Details</h2>\n                      <table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\">\n                        <tr>\n                          <td style=\"padding:8px 0;font-size:14px;color:#6b7280;\"><strong>📅 Date & Time</strong></td>\n                          <td style=\"padding:8px 0;font-size:14px;color:#0b1a33;\">\n                            {{ $('Validate_Date_Format').item.json.interview_start }}\n                          </td>\n                        </tr>\n                        <tr>\n                          <td style=\"padding:8px 0;border-top:1px solid #e9ecef;font-size:14px;color:#6b7280;\"><strong>⏱️ Duration</strong></td>\n                          <td style=\"padding:8px 0;border-top:1px solid #e9ecef;font-size:14px;color:#0b1a33;\">\n                            30 mins\n                          </td>\n                        </tr>\n                        <tr>\n                          <td style=\"padding:8px 0;border-top:1px solid #e9ecef;font-size:14px;color:#6b7280;\"><strong>💼 Position</strong></td>\n                          <td style=\"padding:8px 0;border-top:1px solid #e9ecef;font-size:14px;color:#0b1a33;\">\n                            {{ $('Validate_Date_Format').item.json.applied_role }}\n                          </td>\n                        </tr>\n                        {{ $json.interviewer_names ? `\n                        <tr>\n                          <td style=\"padding:8px 0;border-top:1px solid #e9ecef;font-size:14px;color:#6b7280;\"><strong>👥 Interviewers</strong></td>\n                          <td style=\"padding:8px 0;border-top:1px solid #e9ecef;font-size:14px;color:#0b1a33;\">\n                            ${$json.interviewer_names}\n                          </td>\n                        </tr>` : '' }}\n                        {{ $json.meeting_platform ? `\n                        <tr>\n                          <td style=\"padding:8px 0;border-top:1px solid #e9ecef;font-size:14px;color:#6b7280;\"><strong>🖥️ Platform</strong></td>\n                          <td style=\"padding:8px 0;border-top:1px solid #e9ecef;font-size:14px;color:#0b1a33;\">\n                            ${$json.meeting_platform}\n                          </td>\n                        </tr>` : '' }}\n                      </table>\n                    </td>\n                  </tr>\n                </table>\n\n                <!-- CTA (black text) -->\n                <table role=\"presentation\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"margin:0 0 18px;width:100%;\">\n                  <tr>\n                    <td align=\"center\">\n                      <a href=\"{{ $json.onlineMeeting.joinUrl }}\"\n                         target=\"_blank\" rel=\"noopener\"\n                         class=\"button\"\n                         style=\"display:inline-block;background:linear-gradient(135deg,#0f60ff 0%,#0040dd 100%);border:0;color:#000000 !important;font-weight:700;font-size:16px;line-height:1;padding:16px 28px;border-radius:8px;text-decoration:none;box-shadow:0 4px 12px rgba(15,96,255,0.3);\">\n                        <!--[if mso]><span style=\"mso-style-textfill-type:solid;mso-style-textfill-fill-color:#000000;\"><![endif]-->\n                        🎥 Join Interview Meeting\n                        <!--[if mso]></span><![endif]-->\n                      </a>\n                    </td>\n                  </tr>\n                </table>\n\n                <!-- Backup link -->\n                <table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\"\n                       style=\"margin:0 0 20px;background:#fff9e6;border-left:4px solid #ffc107;border-radius:8px;\">\n                  <tr>\n                    <td style=\"padding:14px;\">\n                      <div style=\"font-size:13px;color:#5c6b80;margin-bottom:6px;\"><strong>💡 Meeting link (backup):</strong></div>\n                      <div style=\"font-size:13px;word-break:break-all;\">\n                        <a class=\"link\" href=\"{{$json.onlineMeeting && $json.onlineMeeting.joinUrl ? $json.onlineMeeting.joinUrl : $json.join_url}}\">\n                          {{$json.onlineMeeting && $json.onlineMeeting.joinUrl ? $json.onlineMeeting.joinUrl : $json.join_url}}\n                        </a>\n                      </div>\n                    </td>\n                  </tr>\n                </table>\n\n                <!-- Prep tips -->\n                <table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\"\n                       style=\"margin:0 0 18px;background:#e7f3ff;border-left:4px solid #0f60ff;border-radius:8px;\">\n                  <tr>\n                    <td style=\"padding:16px;\">\n                      <h3 style=\"margin:0 0 10px;font-size:15px;font-weight:700;color:#0b1a33;\">📝 Before the interview</h3>\n                      <ul style=\"margin:0;padding-left:20px;font-size:14px;line-height:1.7;color:#1b2a44;\">\n                        <li style=\"margin-bottom:8px;\">Test your camera and microphone beforehand.</li>\n                        <li style=\"margin-bottom:8px;\">Ensure a stable internet connection.</li>\n                        <li style=\"margin-bottom:8px;\">Find a quiet, well-lit space.</li>\n                        <li style=\"margin-bottom:8px;\">Join 5 minutes early.</li>\n                        <li style=\"margin-bottom:8px;\">Keep your CV and any relevant documents handy.</li>\n                      </ul>\n                    </td>\n                  </tr>\n                </table>\n\n                <p style=\"margin:0 0 14px;font-size:15px;line-height:1.6;color:#1b2a44;\">\n                  We look forward to speaking with you! If you have questions or need to reschedule, please contact us at\n                  <a class=\"link\" href=\"mailto:{{$json.hr_contact_email || 'hr@example.com'}}\">{{$json.hr_contact_email || 'hr@example.com'}}</a>.\n                </p>\n                <p style=\"margin:0;font-size:15px;line-height:1.6;color:#1b2a44;\">\n                  Best regards,<br>\n                  <strong>{{$json.company_name || 'HR Team'}}</strong>\n                </p>\n              </td>\n            </tr>\n\n            <!-- Footer -->\n            <tr>\n              <td style=\"padding:16px 28px 20px;background:#f7f9fc;border-top:1px solid #e9ecef;font-size:12px;line-height:1.6;color:#6b7280;\">\n                This is an automated invitation from {{$json.company_name || 'our HR system'}}.\n                <div style=\"margin-top:4px;color:#9aa3af;\">Sent: {{$now.format('yyyy-MM-dd HH:mm')}}</div>\n              </td>\n            </tr>\n\n          </table>\n\n          <table role=\"presentation\" width=\"600\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"max-width:600px;width:100%;margin-top:12px;background:#ffffff !important;\" bgcolor=\"#ffffff\">\n            <tr>\n              <td align=\"center\" style=\"font-size:12px;color:#8a99ad;line-height:1.5;\">\n                Please add this meeting to your calendar and be prepared to join at the scheduled time.\n              </td>\n            </tr>\n          </table>\n\n        </td>\n      </tr>\n    </table>\n  </body>\n</html>\n",
+        "additionalFields": {
+          "bodyContentType": "html"
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        3664,
+        -304
+      ],
+      "id": "ad5169d2-5162-4ca0-99b1-3889dc928a74",
+      "name": "Send_Calendar_Invite",
+      "webhookId": "ff623c5c-6db8-46c0-b510-e72187184c7b"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "check-start-exists",
+              "leftValue": "={{ $json.interview_start }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            },
+            {
+              "id": "check-end-exists",
+              "leftValue": "={{ $json.interview_end }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3120,
+        -192
+      ],
+      "id": "33e70bf8-5952-4273-a093-9326d4af68e0",
+      "name": "Validate_Date_Format"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "extract-start",
+              "name": "interview_start",
+              "value": "={{ $json.data['Start Date '] }}",
+              "type": "string"
+            },
+            {
+              "id": "extract-end",
+              "name": "interview_end",
+              "value": "={{ $json.data['End Date'] }}",
+              "type": "string"
+            },
+            {
+              "id": "candidate-email",
+              "name": "candidate_email",
+              "value": "={{ $('Prepare_Candidate_Data1').item.json.email }}",
+              "type": "string"
+            },
+            {
+              "id": "candidate-name",
+              "name": "candidate_name",
+              "value": "={{ $('Prepare_Candidate_Data1').item.json.first_name }} {{ $('Prepare_Candidate_Data1').item.json.last_name }}",
+              "type": "string"
+            },
+            {
+              "id": "applied-role",
+              "name": "applied_role",
+              "value": "={{ $('Prepare_Candidate_Data1').item.json.applied_role }}",
+              "type": "string"
+            },
+            {
+              "id": "93bfb34b-0c4d-426d-976a-cdbe17242452",
+              "name": "page_id",
+              "value": "={{ $('Update_Existing_Application1').item.json.id || $('Create_New_Application1').item.json.id }}\n",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2896,
+        -192
+      ],
+      "id": "d01a1a90-3e44-43ba-8a23-004a85e6b4f5",
+      "name": "Extract_Interview_Details"
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "toRecipients": "furkan_cinko@outlook.com",
+        "subject": "=🎯 Interview Needed: {{ $('Prepare_Candidate_Data1').item.json.first_name }} {{ $('Prepare_Candidate_Data1').item.json.last_name }}(Score: {{ $('AI_Candidate_Scoring1').item.json.output.total_score }}/100)",
+        "message": "=<!doctype html>\n<html lang=\"en\" style=\"margin:0;padding:0;\">\n  <head>\n    <meta charset=\"utf-8\"/>\n    <meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\"/>\n    <meta http-equiv=\"x-ua-compatible\" content=\"ie=edge\"/>\n    <title>Strong Candidate Alert</title>\n\n    <!-- Force light mode in clients that support it -->\n    <meta name=\"color-scheme\" content=\"light\">\n    <meta name=\"supported-color-schemes\" content=\"light\">\n\n    <style>\n      /* Prevent Outlook.com dark-mode inversion */\n      [data-ogsc] body, [data-ogsc] table, [data-ogsc] td { background:#ffffff !important; color:#111827 !important; }\n      a { color:#0f60ff; text-decoration:none; }\n      .link { text-decoration:underline; }\n      /* Mobile adjustments (kept minimal for compatibility) */\n      @media only screen and (max-width: 600px) {\n        .wrapper { padding:16px !important; }\n        .card { width:100% !important; }\n        .h1 { font-size:20px !important; line-height:1.35 !important; }\n        .meta { font-size:12px !important; }\n      }\n    </style>\n    <!--[if mso]>\n      <style type=\"text/css\">\n        body, table, td, p, a, li { font-family: Arial, Helvetica, sans-serif !important; }\n      </style>\n    <![endif]-->\n  </head>\n\n  <body bgcolor=\"#ffffff\" style=\"margin:0;padding:0;background:#ffffff !important;font-family:Arial,Helvetica,sans-serif;color:#111827;\">\n    <!-- Preheader (hidden preview text) -->\n    <div style=\"display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;\">\n      High-scoring candidate requires review – Score: {{ $('AI_Candidate_Scoring1').item.json.output.total_score }}/100\n    </div>\n\n    <table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" bgcolor=\"#ffffff\" style=\"background:#ffffff !important;\">\n      <tr>\n        <td align=\"center\" style=\"padding:24px;\">\n          <!-- Card container -->\n          <table role=\"presentation\" class=\"card\" width=\"600\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" bgcolor=\"#ffffff\" style=\"max-width:600px;width:100%;background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;box-shadow:0 6px 24px rgba(0,36,100,0.06);\">\n            <!-- Brand bar -->\n            <tr>\n              <td style=\"background:#28a745;height:6px;line-height:6px;font-size:0;\">&nbsp;</td>\n            </tr>\n\n            <!-- Header -->\n            <tr>\n              <td class=\"wrapper\" style=\"padding:20px 24px 0 24px;\">\n                <table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\">\n                  <tr>\n                    <td align=\"left\" style=\"vertical-align:middle;\">\n                      <a href=\"{{$json.company_website || 'https://www.apollo-gs.com'}}\" target=\"_blank\" style=\"display:inline-block;\">\n                        <img src=\"{{$json.company_logo_url || 'https://www.apollo-gs.com/cdn/shop/files/apollonewschrift.png?height=36&v=1755554546'}}\"\n                             width=\"160\" height=\"48\" alt=\"{{ $json.company_name || 'Apollo Green Solution' }} logo\"\n                             style=\"display:block;border:0;outline:none;text-decoration:none;height:auto;max-width:160px;\">\n                      </a>\n                    </td>\n                    <td align=\"right\" class=\"meta\" style=\"font-size:12px;color:#6b7280;\">\n                      Generated: {{$now.format('yyyy-MM-dd HH:mm')}} ({{$now.tz}})\n                    </td>\n                  </tr>\n                </table>\n              </td>\n            </tr>\n\n            <!-- Title / Score -->\n            <tr>\n              <td style=\"padding:12px 24px 0 24px;\">\n                <table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\">\n                  <tr>\n                    <td align=\"left\" style=\"font-size:12px;letter-spacing:.4px;text-transform:uppercase;font-weight:700;color:#28a745;\">\n                      🎯 Strong Candidate Alert\n                    </td>\n                    <td align=\"right\" style=\"font-size:12px;color:#6b7280;\">\n                      Score: <strong>{{ $('AI_Candidate_Scoring1').item.json.output.total_score }}</strong>/100\n                    </td>\n                  </tr>\n                </table>\n                <h1 class=\"h1\" style=\"margin:10px 0 8px;font-size:22px;line-height:1.35;color:#0b1a33;\">\n                  Candidate qualifies for next-stage review\n                </h1>\n                <p style=\"margin:0 0 12px;font-size:15px;line-height:1.6;color:#1b2a44;\">\n                  A high-scoring candidate has completed the assessment for <strong>{{ $('Prepare_Candidate_Data1').item.json.applied_role }}</strong>. Details below.\n                </p>\n              </td>\n            </tr>\n\n            <!-- Candidate Profile -->\n            <tr>\n              <td style=\"padding:12px 24px;\">\n                <table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"background:#f7f9fc;border:1px solid #e5e7eb;border-radius:10px;\">\n                  <tr>\n                    <td style=\"padding:16px;\">\n                      <h2 style=\"margin:0 0 10px;font-size:16px;font-weight:700;color:#0b1a33;\">👤 Candidate Profile</h2>\n                      <table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\">\n                        <tr>\n                          <td width=\"140\" style=\"padding:6px 0;font-size:14px;color:#6b7280;\"><strong>Name:</strong></td>\n                          <td style=\"padding:6px 0;font-size:14px;color:#0b1a33;\">\n                            {{ $('Prepare_Candidate_Data1').item.json.first_name }} {{ $('Prepare_Candidate_Data1').item.json.last_name }}\n                          </td>\n                        </tr>\n                        <tr>\n                          <td style=\"padding:6px 0;font-size:14px;color:#6b7280;\"><strong>Email:</strong></td>\n                          <td style=\"padding:6px 0;font-size:14px;color:#0b1a33;\">\n                            <a class=\"link\" href=\"mailto:{{ $('Prepare_Candidate_Data1').item.json.email }}\">{{ $('Prepare_Candidate_Data1').item.json.email }}</a>\n                          </td>\n                        </tr>\n                        <tr>\n                          <td style=\"padding:6px 0;font-size:14px;color:#6b7280;\"><strong>Applied Role:</strong></td>\n                          <td style=\"padding:6px 0;font-size:14px;color:#0b1a33;\">\n                            {{ $('Prepare_Candidate_Data1').item.json.applied_role }}\n                          </td>\n                        </tr>\n                        <tr>\n                          <td style=\"padding:6px 0;font-size:14px;color:#6b7280;\"><strong>Experience:</strong></td>\n                          <td style=\"padding:6px 0;font-size:14px;color:#0b1a33;\">\n                            {{ $('Prepare_Candidate_Data1').item.json.candidate_experience }}\n                          </td>\n                        </tr>\n                        <tr>\n                          <td style=\"padding:6px 0;font-size:14px;color:#6b7280;\"><strong>Skills:</strong></td>\n                          <td style=\"padding:6px 0;font-size:14px;color:#0b1a33;\">\n                            {{ $('Prepare_Candidate_Data1').item.json.candidate_skills }}\n                          </td>\n                        </tr>\n                      </table>\n\n                      <!-- Files (optional) -->\n                      {{ ( $('Prepare_Candidate_Data1').item.json.cv_url || $('Prepare_Candidate_Data1').item.json.video_url ) ? `\n                        <div style=\"margin-top:12px;font-size:14px;color:#0b1a33;\">\n                          <strong>Files:</strong>\n                          ${ $('Prepare_Candidate_Data1').item.json.cv_url ? ' <a class=\"link\" target=\"_blank\" href=\"' + $('Prepare_Candidate_Data1').item.json.cv_url + '\">View CV</a>' : '' }\n                          ${ $('Prepare_Candidate_Data1').item.json.video_url ? ' · <a class=\"link\" target=\"_blank\" href=\"' + $('Prepare_Candidate_Data1').item.json.video_url + '\">View Video</a>' : '' }\n                        </div>\n                      ` : '' }}\n                    </td>\n                  </tr>\n                </table>\n              </td>\n            </tr>\n\n            <!-- Assessment Breakdown -->\n            <tr>\n              <td style=\"padding:0 24px 12px;\">\n                <table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"background:#ffffff;border:1px solid #e5e7eb;border-radius:10px;\">\n                  <tr>\n                    <td style=\"padding:16px;\">\n                      <h2 style=\"margin:0 0 10px;font-size:16px;font-weight:700;color:#0b1a33;\">📊 Assessment Breakdown</h2>\n                      <table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\">\n                        <tr>\n                          <td colspan=\"2\" style=\"padding:6px 0;border-bottom:1px solid #e5e7eb;\">\n                            <div style=\"font-size:16px;font-weight:700;color:#28a745;\">\n                              Overall Score: {{ $('AI_Candidate_Scoring1').item.json.output.total_score }}/100\n                            </div>\n                          </td>\n                        </tr>\n                        <tr>\n                          <td style=\"padding:8px 0;font-size:14px;color:#374151;\">🎯 Relevance & Qualification</td>\n                          <td align=\"right\" style=\"padding:8px 0;font-size:14px;font-weight:600;color:#111827;\">\n                            {{ $('AI_Candidate_Scoring1').item.json.output.relevance_score }}/30\n                          </td>\n                        </tr>\n                        <tr>\n                          <td style=\"padding:8px 0;font-size:14px;color:#374151;\">💬 Communication & Clarity</td>\n                          <td align=\"right\" style=\"padding:8px 0;font-size:14px;font-weight:600;color:#111827;\">\n                            {{ $('AI_Candidate_Scoring1').item.json.output.communication_score }}/25\n                          </td>\n                        </tr>\n                        <tr>\n                          <td style=\"padding:8px 0;font-size:14px;color:#374151;\">🔥 Motivation & Cultural Fit</td>\n                          <td align=\"right\" style=\"padding:8px 0;font-size:14px;font-weight:600;color:#111827;\">\n                            {{ $('AI_Candidate_Scoring1').item.json.output.motivation_score }}/25\n                          </td>\n                        </tr>\n                        <tr>\n                          <td style=\"padding:8px 0;font-size:14px;color:#374151;\">⭐ Professionalism & Potential</td>\n                          <td align=\"right\" style=\"padding:8px 0;font-size:14px;font-weight:600;color:#111827;\">\n                            {{ $('AI_Candidate_Scoring1').item.json.output.professionalism_score }}/20\n                          </td>\n                        </tr>\n                        <tr>\n                          <td colspan=\"2\" style=\"padding:12px 0 0;\">\n                            <div style=\"padding:10px 12px;background:#e7f3ff;border-radius:6px;font-size:14px;line-height:1.6;color:#004080;\">\n                              <strong>Recommendation:</strong> {{ $('AI_Candidate_Scoring1').item.json.output.recommendation }}\n                            </div>\n                          </td>\n                        </tr>\n                      </table>\n                    </td>\n                  </tr>\n                </table>\n              </td>\n            </tr>\n\n            <!-- AI Summary -->\n            <tr>\n              <td style=\"padding:0 24px 12px;\">\n                <table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"background:#fff9e6;border-left:4px solid #ffc107;border-radius:10px;\">\n                  <tr>\n                    <td style=\"padding:14px;\">\n                      <h3 style=\"margin:0 0 8px;font-size:15px;font-weight:700;color:#0b1a33;\">📝 AI Assessment Summary</h3>\n                      <p style=\"margin:0;font-size:14px;line-height:1.6;color:#1b2a44;\">\n                        {{ $('AI_Candidate_Scoring1').item.json.output.justification }}\n                      </p>\n                    </td>\n                  </tr>\n                </table>\n              </td>\n            </tr>\n\n            <!-- Strengths -->\n            <tr>\n              <td style=\"padding:0 24px 8px;\">\n                <h3 style=\"margin:0 0 8px;font-size:15px;font-weight:700;color:#28a745;\">✅ Key Strengths</h3>\n                <ul style=\"margin:0;padding-left:20px;font-size:14px;line-height:1.7;color:#1b2a44;\">\n                  {{ $('AI_Candidate_Scoring1').item.json.output.strengths.map(s => `<li style=\"margin-bottom:6px;\">${s}</li>`).join('') }}\n                </ul>\n              </td>\n            </tr>\n\n            <!-- Concerns -->\n            <tr>\n              <td style=\"padding:0 24px 16px;\">\n                <h3 style=\"margin:0 0 8px;font-size:15px;font-weight:700;color:#dc3545;\">⚠️ Points to Consider</h3>\n                <ul style=\"margin:0;padding-left:20px;font-size:14px;line-height:1.7;color:#1b2a44;\">\n                  {{ $('AI_Candidate_Scoring1').item.json.output.concerns.map(c => `<li style=\"margin-bottom:6px;\">${c}</li>`).join('') }}\n                </ul>\n              </td>\n            </tr>\n\n            <!-- Footer -->\n            <tr>\n              <td style=\"padding:14px 24px 20px;background:#f7f9fc;font-size:12px;line-height:1.6;color:#6b7280;\">\n                This is an automated notification from {{$json.company_name || 'Apollo Green Solution'}} HR Assessment System.\n                <div style=\"margin-top:4px;color:#9aa3af;\">Candidate ID: {{ $('Prepare_Candidate_Data1').item.json.candidate_id || 'N/A' }}</div>\n              </td>\n            </tr>\n          </table>\n\n          <!-- Secondary footer -->\n          <table role=\"presentation\" width=\"600\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" style=\"max-width:600px;width:100%;margin-top:12px;background:#ffffff !important;\">\n            <tr>\n              <td align=\"center\" style=\"font-size:11px;color:#8a99ad;\">\n                Automated candidate assessment notification\n              </td>\n            </tr>\n          </table>\n\n        </td>\n      </tr>\n    </table>\n  </body>\n</html>\n",
+        "responseType": "customForm",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Start Date ",
+              "placeholder": "(yyyy/mm/dd hh:mm)",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "End Date",
+              "placeholder": "(yyyy/mm/dd hh:mm)",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        2672,
+        -192
+      ],
+      "id": "8ec1488a-8a6b-453f-b6ca-6c4bf2edf2ff",
+      "name": "Send_Message_And_Wait_Response",
+      "webhookId": "9c538c74-6e4a-4235-99ea-265e144b8b77"
+    },
+    {
+      "parameters": {
+        "resource": "event",
+        "operation": "create",
+        "calendarId": {
+          "__rl": true,
+          "value": "AQMkADAwATNiZmYAZC01Y2I0LTQ5NjQtMDACLTAwCgBGAAADE7SzK_LHxUK34QDEph_UtwcAeKqDj9AQckSYAf5s8qvNHgAAAgEGAAAAeKqDj9AQckSYAf5s8qvNHgAAAgk9AAAA",
+          "mode": "list",
+          "cachedResultName": "Calendar"
+        },
+        "subject": "=Interview of {{ $json.candidate_name }} for {{ $json.applied_role }}",
+        "startDateTime": "={{ $json.interview_start }}",
+        "endDateTime": "={{ $json.interview_end }}",
+        "additionalFields": {
+          "isOnlineMeeting": true,
+          "timeZone": "Europe/Zurich"
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        3440,
+        -304
+      ],
+      "id": "74693108-9a3e-4d07-be24-ec960959e6cd",
+      "name": "Create an event",
+      "webhookId": "4797bc47-d59e-4aa7-8d9f-7abcf124160b"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "fb1133ff-4d47-4245-bb3b-d2db64865f03",
+              "leftValue": "={{ $('AI_Candidate_Scoring1').item.json.output.total_score }}",
+              "rightValue": 60,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2448,
+        -80
+      ],
+      "id": "7eed40f3-88ed-42e6-b1a2-541c0a37ffa7",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "toRecipients": "=furkan_cinko@outlook.com",
+        "subject": "=Your Application Result for {{ $('Prepare_Candidate_Data1').item.json.applied_role }}",
+        "bodyContent": "=<!doctype html>\n<html lang=\"en\" style=\"margin:0;padding:0;\">\n  <head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\"/>\n    <title>Application Update</title>\n    <meta name=\"color-scheme\" content=\"light\">\n    <meta name=\"supported-color-schemes\" content=\"light\">\n    <style>\n      [data-ogsc] body, [data-ogsc] table, [data-ogsc] td {\n        background:#ffffff !important; color:#111827 !important;\n      }\n      a { color:#2563eb; }\n    </style>\n  </head>\n  <body bgcolor=\"#ffffff\" style=\"margin:0;padding:0;background:#ffffff !important;font-family:Arial,Helvetica,sans-serif;color:#111827;\">\n    <table role=\"presentation\" width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" bgcolor=\"#ffffff\" style=\"background:#ffffff !important;\">\n      <tr>\n        <td align=\"center\" bgcolor=\"#ffffff\" style=\"padding:24px;\">\n          <table role=\"presentation\" width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\"\n                 bgcolor=\"#ffffff\"\n                 style=\"max-width:600px;background:#ffffff;border-radius:12px;border:1px solid #e5e7eb;\">\n            \n            <!-- Header -->\n            <tr>\n              <td align=\"center\" style=\"padding:28px 24px 8px 24px;\">\n                <a href=\"{{$json.company_website || 'https://www.apollo-gs.com'}}\" target=\"_blank\" style=\"text-decoration:none;display:inline-block;\">\n                  <img src=\"https://www.apollo-gs.com/cdn/shop/files/apollonewschrift.png?height=36&v=1755554546\"\n                       width=\"160\" height=\"48\"\n                       alt=\"Apollo Green Solution logo\"\n                       style=\"display:block;border:0;outline:none;text-decoration:none;height:auto;max-width:160px;\">\n                </a>\n              </td>\n            </tr>\n\n            <!-- Title -->\n            <tr>\n              <td align=\"left\" style=\"padding:8px 24px 0 24px;\">\n                <h1 style=\"margin:0;font-size:20px;line-height:28px;font-weight:700;color:#111827;\">\n                  Application Update – {{ $('Prepare_Candidate_Data1').item.json.applied_role }}\n                </h1>\n              </td>\n            </tr>\n\n            <!-- Message -->\n            <tr>\n              <td align=\"left\" style=\"padding:12px 24px 0 24px;\">\n                <p style=\"margin:0 0 12px 0;font-size:15px;line-height:22px;\">\n                  Dear {{ $('Prepare_Candidate_Data1').item.json.first_name }},\n                </p>\n                <p style=\"margin:0 0 12px 0;font-size:15px;line-height:22px;\">\n                  Thank you for taking the time to apply for the <strong>{{ $('Prepare_Candidate_Data1').item.json.applied_role }}</strong> position at <strong>Apollo Green Solution</strong> and for participating in our assessment process.\n                </p>\n                <p style=\"margin:0 0 12px 0;font-size:15px;line-height:22px;\">\n                  After a detailed review, we’ve decided not to move forward with your application at this stage. This decision was based on a comprehensive evaluation of all criteria outlined for the role.\n                </p>\n              </td>\n            </tr>\n\n            <!-- Feedback -->\n            <tr>\n              <td align=\"left\" style=\"padding:8px 24px;\">\n                <table role=\"presentation\" width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\"\n                       bgcolor=\"#f9fafb\"\n                       style=\"background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;\">\n                  <tr>\n                    <td style=\"padding:14px 16px;\">\n                      <p style=\"margin:0 0 8px 0;font-size:14px;line-height:20px;color:#111827;\"><strong>Summary of Feedback</strong></p>\n\n                      <p style=\"margin:0 0 10px 0;font-size:14px;line-height:20px;color:#111827;\">\n                        {{ $('AI_Candidate_Scoring1').item.json.output.justification }}\n                      </p>\n\n                      <p style=\"margin:0 0 6px 0;font-size:13px;line-height:20px;color:#6b7280;\">Strengths:</p>\n                      <ul style=\"margin:0 0 10px 16px;padding:0;font-size:14px;line-height:20px;color:#111827;\">\n                        {{ $('AI_Candidate_Scoring1').item.json.output.strengths.map(strength => `<li style=\"margin-bottom:6px;\">${strength}</li>`).join('') }}\n                      </ul>\n\n                      <p style=\"margin:0 0 6px 0;font-size:13px;line-height:20px;color:#6b7280;\">Areas for improvement:</p>\n                      <ul style=\"margin:0;padding:0 0 0 16px;font-size:14px;line-height:20px;color:#111827;\">\n                        {{ $('AI_Candidate_Scoring1').item.json.output.concerns.map(strength => `<li style=\"margin-bottom:6px;\">${strength}</li>`).join('') }}\n                      </ul>\n                    </td>\n                  </tr>\n                </table>\n              </td>\n            </tr>\n\n            <!-- Closing -->\n            <tr>\n              <td align=\"left\" style=\"padding:16px 24px 6px 24px;\">\n                <p style=\"margin:0 0 12px 0;font-size:15px;line-height:22px;\">\n                  We sincerely appreciate your interest in joining Apollo Green Solution and encourage you to apply for future openings that align with your skills and experience.\n                </p>\n                <p style=\"margin:0 0 18px 0;font-size:15px;line-height:22px;\">\n                  Wishing you every success in your career journey.<br>\n                  <strong>HR Team</strong><br>\n                  Apollo Green Solution\n                </p>\n              </td>\n            </tr>\n\n            <!-- Divider -->\n            <tr>\n              <td style=\"padding:0 24px;\">\n                <hr style=\"border:none;border-top:1px solid #e5e7eb;margin:0;\">\n              </td>\n            </tr>\n\n            <!-- Footer -->\n            <tr>\n              <td align=\"left\" style=\"padding:12px 24px 22px 24px;\">\n                <p style=\"margin:0;font-size:12px;line-height:18px;color:#6b7280;\">\n                  Apollo Green Solution · {{$json.company_website || 'https://www.apollo-gs.com'}}\n                </p>\n              </td>\n            </tr>\n          </table>\n\n          <table role=\"presentation\" width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"max-width:600px;background:#ffffff !important;\">\n            <tr>\n              <td align=\"center\" style=\"padding:12px 8px 0 8px;background:#ffffff !important;\">\n                <p style=\"margin:0;font-size:11px;line-height:16px;color:#9ca3af;\">\n                  This message was sent by Apollo Green Solution in response to your application.\n                </p>\n              </td>\n            </tr>\n          </table>\n        </td>\n      </tr>\n    </table>\n  </body>\n</html>\n",
+        "additionalFields": {
+          "bodyContentType": "html"
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        2672,
+        16
+      ],
+      "id": "ae0d94f8-72f6-42cf-b8ce-aa8d43b26588",
+      "name": "Rejection Email",
+      "webhookId": "0e55fc1b-4607-43cf-8846-f0505fe4c3fc",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": {
+          "__rl": true,
+          "value": "={{ $('Extract_Interview_Details').item.json.page_id }}",
+          "mode": "id"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Status|status",
+              "statusValue": "Interview Scheduled"
+            },
+            {
+              "key": "Interview Start Date|date",
+              "date": "={{ $('Validate_Date_Format').item.json.interview_start }}"
+            },
+            {
+              "key": "Interview End Date|date",
+              "date": "={{ $('Validate_Date_Format').item.json.interview_end }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        4080,
+        -304
+      ],
+      "id": "243dc0b5-9a6a-4bbc-9319-562074ab54ca",
+      "name": "Update a database page"
+    },
+    {
+      "parameters": {
+        "content": "## 📬 Application Intake (Webhook Trigger)\n\n\n1. Receives new candidate submissions directly from the career page form.\n2. Captures CV (PDF), video (MP4), and form data in real-time.\n3. Launches the full automation instantly when a new form is received.",
+        "height": 240,
+        "width": 400,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1072,
+        -336
+      ],
+      "typeVersion": 1,
+      "id": "dcef2ea5-a444-4894-b4c4-e670bed309a4",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## 📁 CV & Video Upload + Processing\n\n1. Uploads both candidate files to Google Drive for secure cloud storage.\n2. Extracts text from CV (PDF) and transcribes video introductions into text.\n3. Ensures every application has readable, searchable data for AI analysis.",
+        "height": 240,
+        "width": 352
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -864,
+        208
+      ],
+      "typeVersion": 1,
+      "id": "d04970ed-c6c1-42a4-8c61-db907eb5002f",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## 🔗 Data Merge & Aggregation\n\n1. Merges all sources – form data, CV text, video transcript – into a unified record.\n2. Cleans and organizes the data structure before it moves to AI evaluation.\n3. Foundation for consistent, bias-free candidate scoring in later steps.",
+        "height": 208,
+        "width": 464,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -176,
+        -464
+      ],
+      "typeVersion": 1,
+      "id": "b78ea7fb-c66d-47c4-a873-c2d10dc68b06",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## 🧠 Intelligent CV Information Extraction\n\nUses OpenAI’s GPT-4o-mini model to analyze the candidate’s CV text.\nAutomatically identifies key data such as:\n– Work experience (companies, job titles, durations)\n– Technical and soft skills\n– Missing or incomplete information\n\nConverts unstructured CVs into clean, structured data for scoring and storage.",
+        "height": 224,
+        "width": 624
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        112,
+        256
+      ],
+      "typeVersion": 1,
+      "id": "820f7623-584e-4850-8e9b-9ea5547f1415",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## 📦 Preparing Candidate Profile for Evaluation\n\n1. Consolidates all extracted and form data into a unified candidate profile.\n2. Assigns fields such as name, email, LinkedIn, applied role, and skills.\n3. Generates a unique candidate_id to avoid duplicates in the database.\n\nEnsures every applicant’s information is standardized and ready for AI scoring and Notion integration.",
+        "height": 304,
+        "width": 480,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        544,
+        -416
+      ],
+      "typeVersion": 1,
+      "id": "84c78e98-a472-4c10-a043-eae936161584",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## 🤖 Comprehensive AI Evaluation\n\nUses GPT-4 to analyze the full candidate profile — CV, video transcript, and form responses.\nScores applicants across four key areas:\n• Relevance & Qualification (30 pts)\n• Communication & Clarity (25 pts)\n• Motivation & Cultural Fit (25 pts)\n• Professionalism & Potential (20 pts)\n\nThe model returns a structured JSON report with total score, strengths, concerns, and recommendation (e.g. Proceed to Interview, Reject).\n\n✅ Enables consistent, bias-free, and explainable hiring decisions.",
+        "height": 320,
+        "width": 576,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        848,
+        256
+      ],
+      "typeVersion": 1,
+      "id": "4ad39005-196e-47eb-a748-7f64e6ea3185",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "## 📘 Smart Applicant Management in Notion\n\nChecks whether a candidate already exists in the Notion “HR Automation – Applicants” database using their unique candidate_id.\n\n🧩 If the application already exists → updates the existing page with the latest score, status, and feedback.\n🆕 If it’s a new candidate → creates a fresh record with full details from the workflow.\n\nEnsures a single, clean source of truth for all applicants — no duplicates, no missing data, fully audit-ready.",
+        "height": 256,
+        "width": 640,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1360,
+        -448
+      ],
+      "typeVersion": 1,
+      "id": "06a3f526-1c45-42ac-8492-cbd5a8e68a16",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "content": "## 📧 Sending Professional Acknowledgment Emails \n\nUses Microsoft Outlook integration to automatically send a branded confirmation email to each candidate.\n\nThe email includes:\n• Candidate’s name and role applied for\n• Confirmation that their CV and video were received\n• Company branding and HR contact details\n\n💼 Delivers instant, professional communication - maintaining transparency and engagement from the first interaction.",
+        "height": 368,
+        "width": 368,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2080,
+        -480
+      ],
+      "typeVersion": 1,
+      "id": "214b2a09-1070-41a4-8a68-cab2e7cff180",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "content": "## ⚙️ Automated Decision Routing\n\nUses conditional logic to decide the next action based on the AI score.\n\n✅ If candidate score > 60 → Sends an interactive email to HR (Send_Message_And_Wait_Response) to schedule an interview.\n❌ If score ≤ 60 → Sends a personalized rejection email with structured feedback.\n\nThis ensures every candidate receives timely and appropriate communication - maintaining fairness, transparency, and efficiency throughout the hiring process.",
+        "height": 288,
+        "width": 448,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2432,
+        192
+      ],
+      "typeVersion": 1,
+      "id": "d2102eaa-34bf-4405-a7a4-4e81eebf1b88",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "content": "## 📆 Interactive Interview Scheduling\n\nSends an Outlook email form to HR, allowing them to input interview start and end times directly from their inbox.\n\nThe workflow then:\n• Extracts entered details automatically (Extract_Interview_Details)\n• Validates date and time format (Validate_Date_Format)\n• Ensures accurate scheduling before creating the official event.\n\n💡 Simplifies coordination - no manual calendar editing or back-and-forth emails required.",
+        "height": 272,
+        "width": 544,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2656,
+        -496
+      ],
+      "typeVersion": 1,
+      "id": "04dedd81-6a04-49bf-8db8-d2841e858447",
+      "name": "Sticky Note9"
+    },
+    {
+      "parameters": {
+        "content": "## 📆 Automated Interview Scheduling & Tracking \nOnce the date is validated, the system:\n• Creates an official Outlook calendar event with the interview details and meeting link.\n• Sends a personalized calendar invite to the candidate (Send_Calendar_Invite).\n• Notifies HR of the successful scheduling (Confirm_To_HR).\n• Updates the Notion database with interview date, status, and timestamps.\n\n✅ Ensures end-to-end visibility and zero manual work - from scheduling to record-keeping.",
+        "height": 224,
+        "width": 624,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3488,
+        -576
+      ],
+      "typeVersion": 1,
+      "id": "23d62f8b-8a24-4a5e-a6ec-4070c66b5d55",
+      "name": "Sticky Note10"
+    },
+    {
+      "parameters": {
+        "content": "## ⚠️ Smart Error Detection & Notifications\n\nAutomatically identifies workflow issues - like invalid date formats or missing interview details.\n\nWhen an error occurs, the system:\n• Sends an instant email alert to HR explaining the issue (Send_Error_Notification).\n• Suggests the correct input format for quick resolution.\n\n💡 Ensures the automation remains reliable and transparent, with human oversight only when needed.",
+        "height": 272,
+        "width": 512
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3248,
+        48
+      ],
+      "typeVersion": 1,
+      "id": "f736ae3a-952c-44eb-8065-10d6849a9d51",
+      "name": "Sticky Note11"
+    },
+    {
+      "parameters": {
+        "content": "## 📩 Automated HR Confirmation\n\nSends a confirmation email to the HR team once the interview has been successfully scheduled.\n\nThe message includes:\n• Candidate’s name, role, and interview time\n• Confirmation that the calendar event was created\n• Quick visibility for HR without checking the system manually\n\n✅ Closes the loop with a transparent, automated confirmation - ensuring HR is always informed and in control.",
+        "height": 272,
+        "width": 480,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3856,
+        -128
+      ],
+      "typeVersion": 1,
+      "id": "52c07444-afce-4381-963a-cfbab82b175b",
+      "name": "Sticky Note12"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Application_Intake": {
+      "main": [
+        [
+          {
+            "node": "Upload_CV_to_Drive",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Upload_Video_to_Drive",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Extract_CV_Text1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Transcribe_Video1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload_CV_to_Drive": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload_Video_to_Drive": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge_CV_Video_Data1": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract_CV_Info1": {
+      "main": [
+        [
+          {
+            "node": "Prepare_Candidate_Data1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI_Chat_Model_Mini1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Extract_CV_Info1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare_Candidate_Data1": {
+      "main": [
+        [
+          {
+            "node": "AI_Candidate_Scoring1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI_Candidate_Scoring1": {
+      "main": [
+        [
+          {
+            "node": "Check_Existing_Application1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI_Chat_Model_GPT": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI_Candidate_Scoring1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON_Output_Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI_Candidate_Scoring1",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check_Existing_Application1": {
+      "main": [
+        [
+          {
+            "node": "Is_Duplicate_Application1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is_Duplicate_Application1": {
+      "main": [
+        [
+          {
+            "node": "Update_Existing_Application1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create_New_Application1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe_Video1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract_CV_Text1": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Merge_CV_Video_Data1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Merge_CV_Video_Data1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Extract_CV_Info1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update_Existing_Application1": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create_New_Application1": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirm_To_HR": {
+      "main": [
+        [
+          {
+            "node": "Update a database page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send_Calendar_Invite": {
+      "main": [
+        [
+          {
+            "node": "Confirm_To_HR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate_Date_Format": {
+      "main": [
+        [
+          {
+            "node": "Create an event",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send_Error_Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract_Interview_Details": {
+      "main": [
+        [
+          {
+            "node": "Validate_Date_Format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send_Message_And_Wait_Response": {
+      "main": [
+        [
+          {
+            "node": "Extract_Interview_Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create an event": {
+      "main": [
+        [
+          {
+            "node": "Send_Calendar_Invite",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send_Message_And_Wait_Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Rejection Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "d990dd60-0153-490f-8300-741647523177",
+  "meta": {
+    "instanceId": "0b167082d2b7abc70155a8b5e16e66a4eb85f98e454bc781c6ebe29022f165c5"
+  },
+  "id": "AxdPoTbfm6MxWRts",
+  "tags": []
+}
