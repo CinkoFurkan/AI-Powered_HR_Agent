@@ -1,5 +1,3 @@
----
-
 ##  Apollo HR Automation & Careers Page
 
 **AI-powered candidate screening, centralized application intake, and automated HR workflows**
